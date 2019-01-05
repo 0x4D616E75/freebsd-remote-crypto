@@ -16,21 +16,21 @@ if [ "$1" = "update" ] ; then
 	dst=${2-/xboot}
 fi
 
-if [ ! -d $src ] ; then 
+if [ ! -d $src ] ; then
 	echo "Source dir $src does not exist" >&2
-	exit 
+	exit
 fi
 
-if [ ! -d $dst ] ; then 
+if [ ! -d $dst ] ; then
 	echo "Destination dir $dst does not exist" >&2
-	exit 
+	exit
 fi
 
-if [ x"$dst" = x"$src" ] ; then 
+if [ x"$dst" = x"$src" ] ; then
 	echo "srcdir and dstdir may not be equal" >&2
-	exit 
+	exit
 fi
-tar -C $src -cf - bin sbin lib libexec rescue | tar -C $dst -xf - 
+tar -C $src -cf - bin sbin lib libexec rescue | tar -C $dst -xf -
 
 mkdir -p $dst/usr/share/misc
 mkdir -p $dst/usr/local/etc
