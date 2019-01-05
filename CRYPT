@@ -1,9 +1,11 @@
 set -x
 set -e
 
-# the two disks
+# the four disks
 geom0=ada0
 geom1=ada1
+geom2=ada2
+geom3=ada3
 
 # installation files be here:
 bsd=/usr/freebsd-dist
@@ -29,20 +31,32 @@ ufsdir=/xboot
 
 gpart destroy -F $geom0 || true
 gpart destroy -F $geom1 || true
+gpart destroy -F $geom2 || true
+gpart destroy -F $geom3 || true
 gpart create -s gpt $geom0
 gpart create -s gpt $geom1
-gpart add -b 64 -s 64k   -t freebsd-boot       $geom0
-gpart add -b 64 -s 64k   -t freebsd-boot       $geom1
+gpart create -s gpt $geom2
+gpart create -s gpt $geom3
+gpart add -b 64 -s 128k  -t freebsd-boot       $geom0
+gpart add -b 64 -s 128k  -t freebsd-boot       $geom1
+gpart add -b 64 -s 128k  -t freebsd-boot       $geom2
+gpart add -b 64 -s 128k  -t freebsd-boot       $geom3
 gpart add -l boot0 -s 1G -t freebsd-ufs  -a 4k $geom0 # 512M is absolute minimum, the kernel is so large.
 gpart add -l boot1 -s 1G -t freebsd-ufs  -a 4k $geom1
-gpart add -l swap0 -s 2G -t freebsd-swap -a 4k $geom0
-gpart add -l swap1 -s 2G -t freebsd-swap -a 4k $geom1
+gpart add -l boot2 -s 1G -t freebsd-ufs  -a 4k $geom2
+gpart add -l boot3 -s 1G -t freebsd-ufs  -a 4k $geom3
+gpart add -l swap0 -s 8G -t freebsd-swap -a 4k $geom0
+gpart add -l swap1 -s 8G -t freebsd-swap -a 4k $geom1
+gpart add -l swap2 -s 8G -t freebsd-swap -a 4k $geom2
+gpart add -l swap3 -s 8G -t freebsd-swap -a 4k $geom3
 gpart add -l zroot0      -t freebsd-zfs  -a 4k $geom0
 gpart add -l zroot1      -t freebsd-zfs  -a 4k $geom1
+gpart add -l zroot2      -t freebsd-zfs  -a 4k $geom2
+gpart add -l zroot3      -t freebsd-zfs  -a 4k $geom3
 
 kldload geom_mirror || true
-gmirror label -b load -F swap /dev/gpt/swap0 /dev/gpt/swap1
-gmirror label -b load -F boot /dev/gpt/boot0 /dev/gpt/boot1
+gmirror label -b load -F swap /dev/gpt/swap0 /dev/gpt/swap1 /dev/gpt/swap2 /dev/gpt/swap3
+gmirror label -b load -F boot /dev/gpt/boot0 /dev/gpt/boot1 /dev/gpt/boot2 /dev/gpt/boot3
 
 geli onetime -d -e AES-XTS -l 256 -s 4096 /dev/mirror/swap
 
@@ -57,18 +71,24 @@ set -x
 
 geli init -s 4096 -J /tmp/pw /dev/gpt/zroot0
 geli init -s 4096 -J /tmp/pw /dev/gpt/zroot1
+geli init -s 4096 -J /tmp/pw /dev/gpt/zroot2
+geli init -s 4096 -J /tmp/pw /dev/gpt/zroot3
 geli attach -j /tmp/pw /dev/gpt/zroot0
 geli attach -j /tmp/pw /dev/gpt/zroot1
+geli attach -j /tmp/pw /dev/gpt/zroot2
+geli attach -j /tmp/pw /dev/gpt/zroot3
 
 gpart bootcode -b /boot/pmbr -p /boot/gptboot -i 1 $geom0
 gpart bootcode -b /boot/pmbr -p /boot/gptboot -i 1 $geom1
+gpart bootcode -b /boot/pmbr -p /boot/gptboot -i 1 $geom2
+gpart bootcode -b /boot/pmbr -p /boot/gptboot -i 1 $geom3
 
 # no idea why -j fails....
 #newfs -U -j /dev/mirror/boot
 newfs -U /dev/mirror/boot
 
 pool=tank
-zpool create -f -m none -o altroot=$base -o cachefile=/tmp/zpool.cache $pool mirror /dev/gpt/zroot0.eli /dev/gpt/zroot1.eli
+zpool create -f -m none -o altroot=$base -o cachefile=/tmp/zpool.cache $pool raidz /dev/gpt/zroot0.eli /dev/gpt/zroot1.eli /dev/gpt/zroot2.eli /dev/gpt/zroot3.eli
 
 root=$pool/root
 zfs create -o mountpoint=/                               $root
