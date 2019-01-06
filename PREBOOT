@@ -161,7 +161,7 @@ if [ "$1" = "setup" ] ; then
 		chroot $src /etc/rc.d/sshd onekeygen
 	fi
 
-	grep -E "^(root|nobody):" $src/etc/master.passwd |sed 's!/bin/csh!/bin/sh!'> $dst/etc/master.passwd
+	grep -E "^(root|nobody|_dhcp):" $src/etc/master.passwd |sed 's!/bin/csh!/bin/sh!'> $dst/etc/master.passwd
 
 cat << 'EOM' > $dst/etc/rc
 #!/bin/sh
