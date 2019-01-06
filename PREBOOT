@@ -47,7 +47,7 @@ ln -fs /tmp $dst/var/run
 ln -fs /tmp $dst/var/tmp
 
 mkdir -p $dst/root
-mkdir -p /etc
+mkdir -p $dst/etc
 
 for a in  \
 ./etc/ntp \
