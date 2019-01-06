@@ -49,68 +49,68 @@ mkdir -p $dst/root
 mkdir -p /etc
 
 for a in  \
-./ntp \
-./hosts \
-./dhclient.conf \
-./termcap.small \
-./netconfig \
-./protocols \
-./devfs.conf \
-./devd \
-./devd/asus.conf \
-./devd/uath.conf \
-./devd/usb.conf \
-./devd.conf \
-./rc.d \
-./rc.d/netif \
-./rc.d/dhclient \
-./rc.d/routing \
-./opieaccess \
-./pam.d \
-./pam.d/sshd \
-./pam.d/system \
-./pam.d/passwd \
-./pam.d/login \
-./services \
-./mac.conf \
-./pccard_ether \
-./libmap32.conf \
-./login.access \
-./nsswitch.conf \
-./netstart \
-./shells \
-./libalias.conf \
-./rc.shutdown \
-./hosts.allow \
-./ftpusers \
-./gettytab \
-./sysctl.conf \
-./rc.subr \
-./locate.rc \
-./rpc \
-./defaults \
-./defaults/devfs.rules \
-./defaults/rc.conf \
-./group \
-./dumpdates \
-./ssh \
-./networks \
-./profile \
-./ttys \
-./libmap.conf \
-./login.conf.db \
-./regdomain.xml \
-./zfs \
-./hosts.equiv \
-./login.conf \
-./network.subr \
-./resolv.conf \
-./rc.conf \
+./etc/ntp \
+./etc/hosts \
+./etc/dhclient.conf \
+./etc/termcap.small \
+./etc/netconfig \
+./etc/protocols \
+./etc/devfs.conf \
+./etc/devd \
+./etc/devd/asus.conf \
+./etc/devd/uath.conf \
+./etc/devd/usb.conf \
+./etc/devd.conf \
+./etc/rc.d \
+./etc/rc.d/netif \
+./etc/rc.d/dhclient \
+./etc/rc.d/routing \
+./etc/opieaccess \
+./etc/pam.d \
+./etc/pam.d/sshd \
+./etc/pam.d/system \
+./etc/pam.d/passwd \
+./etc/pam.d/login \
+./etc/services \
+./etc/mac.conf \
+./etc/pccard_ether \
+./etc/libmap32.conf \
+./etc/login.access \
+./etc/nsswitch.conf \
+./etc/netstart \
+./etc/shells \
+./etc/libalias.conf \
+./etc/rc.shutdown \
+./etc/hosts.allow \
+./etc/ftpusers \
+./etc/gettytab \
+./etc/sysctl.conf \
+./etc/rc.subr \
+./etc/locate.rc \
+./etc/rpc \
+./etc/defaults \
+./etc/defaults/devfs.rules \
+./etc/defaults/rc.conf \
+./etc/group \
+./etc/dumpdates \
+./etc/ssh \
+./etc/networks \
+./etc/profile \
+./etc/ttys \
+./etc/libmap.conf \
+./etc/login.conf.db \
+./etc/regdomain.xml \
+./etc/zfs \
+./etc/hosts.equiv \
+./etc/login.conf \
+./etc/network.subr \
+./etc/resolv.conf \
+./etc/rc.conf \
 ; do
-if [ -d $src/etc/$a ] ; then
-	mkdir -p $dst/etc/$a
+if [ -d $src/$a ] ; then
+	mkdir -p $dst/$a
 else
-	[ -f $src/etc/$a ] && cp $src/etc/$a $dst/etc/`dirname $a`
+	[ -f $src/$a ] && cp $src/$a $dst/`dirname $a`
 fi
 done
 ln -fs /etc/termcap.small $dst/etc/termcap
