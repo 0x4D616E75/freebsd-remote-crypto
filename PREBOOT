@@ -32,6 +32,7 @@ if [ x"$dst" = x"$src" ] ; then
 fi
 tar -C $src -cf - bin sbin lib libexec rescue | tar -C $dst -xf -
 
+mkdir -p $dst/usr/bin
 mkdir -p $dst/usr/share/misc
 mkdir -p $dst/usr/local/etc
 ln -fs /tmp $dst/usr/local/etc/dropbear
@@ -46,71 +47,75 @@ ln -fs /tmp $dst/var/run
 ln -fs /tmp $dst/var/tmp
 
 mkdir -p $dst/root
-mkdir -p /etc
+mkdir -p $dst/etc
 
 for a in  \
-./ntp \
-./hosts \
-./dhclient.conf \
-./termcap.small \
-./netconfig \
-./protocols \
-./devfs.conf \
-./devd \
-./devd/asus.conf \
-./devd/uath.conf \
-./devd/usb.conf \
-./devd.conf \
-./rc.d \
-./rc.d/netif \
-./rc.d/dhclient \
-./rc.d/routing \
-./opieaccess \
-./pam.d \
-./pam.d/sshd \
-./pam.d/system \
-./pam.d/passwd \
-./pam.d/login \
-./services \
-./mac.conf \
-./pccard_ether \
-./libmap32.conf \
-./login.access \
-./nsswitch.conf \
-./netstart \
-./shells \
-./libalias.conf \
-./rc.shutdown \
-./hosts.allow \
-./ftpusers \
-./gettytab \
-./sysctl.conf \
-./rc.subr \
-./locate.rc \
-./rpc \
-./defaults \
-./defaults/devfs.rules \
-./defaults/rc.conf \
-./group \
-./dumpdates \
-./ssh \
-./networks \
-./profile \
-./ttys \
-./libmap.conf \
-./login.conf.db \
-./regdomain.xml \
-./zfs \
-./hosts.equiv \
-./login.conf \
-./network.subr \
-./resolv.conf \
-./rc.conf \
+./etc/ntp \
+./etc/hosts \
+./etc/dhclient.conf \
+./etc/termcap.small \
+./etc/netconfig \
+./etc/protocols \
+./etc/devfs.conf \
+./etc/devd \
+./etc/devd/asus.conf \
+./etc/devd/uath.conf \
+./etc/devd/usb.conf \
+./etc/devd.conf \
+./etc/rc.d \
+./etc/rc.d/netif \
+./etc/rc.d/dhclient \
+./etc/rc.d/routing \
+./etc/opieaccess \
+./etc/pam.d \
+./etc/pam.d/sshd \
+./etc/pam.d/system \
+./etc/pam.d/passwd \
+./etc/pam.d/login \
+./etc/services \
+./etc/mac.conf \
+./etc/pccard_ether \
+./etc/libmap32.conf \
+./etc/login.access \
+./etc/nsswitch.conf \
+./etc/netstart \
+./etc/shells \
+./etc/libalias.conf \
+./etc/rc.shutdown \
+./etc/hosts.allow \
+./etc/ftpusers \
+./etc/gettytab \
+./etc/sysctl.conf \
+./etc/rc.subr \
+./etc/locate.rc \
+./etc/rpc \
+./etc/defaults \
+./etc/defaults/devfs.rules \
+./etc/defaults/rc.conf \
+./etc/group \
+./etc/dumpdates \
+./etc/ssh \
+./etc/networks \
+./etc/profile \
+./etc/ttys \
+./etc/libmap.conf \
+./etc/login.conf.db \
+./etc/regdomain.xml \
+./etc/zfs \
+./etc/hosts.equiv \
+./etc/login.conf \
+./etc/network.subr \
+./etc/resolv.conf \
+./etc/rc.conf \
+./usr/bin/grep \
+./usr/bin/limits \
+./usr/bin/sed \
+./usr/bin/tr \
 ; do
-if [ -d $src/etc/$a ] ; then
-	mkdir -p $dst/etc/$a
+if [ -d $src/$a ] ; then
+	mkdir -p $dst/$a
 else
-	[ -f $src/etc/$a ] && cp $src/etc/$a $dst/etc/`dirname $a`
+	[ -f $src/$a ] && cp $src/$a $dst/`dirname $a`
 fi
 done
 ln -fs /etc/termcap.small $dst/etc/termcap
@@ -160,7 +165,7 @@ if [ "$1" = "setup" ] ; then
 		chroot $src /etc/rc.d/sshd onekeygen
 	fi
 
-	grep -E "^(root|nobody):" $src/etc/master.passwd |sed 's!/bin/csh!/bin/sh!'> $dst/etc/master.passwd
+	grep -E "^(root|nobody|_dhcp):" $src/etc/master.passwd |sed 's!/bin/csh!/bin/sh!'> $dst/etc/master.passwd
 
 cat << 'EOM' > $dst/etc/rc
 #!/bin/sh
@@ -224,8 +229,31 @@ echo 'run "killall dropbear" instead to continue boot'
 echo ""
 )> $dst/etc/motd
 
+if [ ! -f $src/usr/local/sbin/dropbear ] ; then
+	cp $src/etc/hosts $src/etc/hosts.org
+	echo $(host -4 -t A pkg.freebsd.org | awk '/has address/ { print $4 }') pkg.freebsd.org >> /mnt/etc/hosts
+	LANG= ASSUME_ALWAYS_YES=yes chroot /mnt pkg install dropbear
+	LANG= ASSUME_ALWAYS_YES=yes chroot /mnt pkg lock -y dropbear
+	cp $src/etc/hosts.org $src/etc/hosts
+	rm $src/etc/hosts.org
+fi
 
-dropbearconvert openssh dropbear $src/etc/ssh/ssh_host_ecdsa_key $dst/etc/dropbear_host_key
+#produces error message bad key type 90
+#$src/usr/local/bin/dropbearconvert openssh dropbear $src/etc/ssh/ssh_host_ecdsa_key $dst/etc/dropbear_host_key
+$src/usr/local/bin/dropbearconvert openssh dropbear $src/etc/ssh/ssh_host_rsa_key $dst/etc/dropbear_host_key
 cp $src/usr/local/sbin/dropbear $dst/sbin/
 pwd_mkdb -p -d $dst/etc $dst/etc/master.passwd
+
+echo ""
+echo "DON'T FORGET TO SET A ROOT PASSWORD"
+echo ""
+LANG= ASSUME_ALWAYS_YES=yes chroot /mnt passwd
+
+mkdir -p $dst/root/.ssh
+chmod 700 $dst/root/.ssh
+touch $dst/root/.ssh/authorized_keys
+chmod 600 $dst/root/.ssh/authorized_keys
+echo ""
+echo "DON'T FORGET TO COPY YOUR RSA SSH PUBLIC KEY TO $dst/root/.ssh/authorized_keys"
+echo ""
 touch $dst/PREBOOT
