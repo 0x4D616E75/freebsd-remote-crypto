@@ -30,7 +30,15 @@ if [ x"$dst" = x"$src" ] ; then
 	echo "srcdir and dstdir may not be equal" >&2
 	exit
 fi
+
+if [ "$1" = "update" ] ; then
+	schg=$(find ${dst} -flags schg)
+	chflags noschg ${schg}
+fi
 tar -C $src -cf - bin sbin lib libexec rescue | tar -C $dst -xf -
+if [ "$1" = "update" ] ; then
+	chflags schg ${schg}
+fi
 
 mkdir -p $dst/usr/bin
 mkdir -p $dst/usr/share/misc
@@ -165,8 +173,8 @@ if [ "$1" = "setup" ] ; then
 		chroot $src /etc/rc.d/sshd onekeygen
 	fi
 
-	grep -E "^(root|nobody|_dhcp):" $src/etc/master.passwd |sed 's!/bin/csh!/bin/sh!'> $dst/etc/master.passwd
-
+	grep -E "^(root):" $src/etc/master.passwd | sed 's!root:/.*$!root:/bin/sh!' > $dst/etc/master.passwd
+	grep -E "^(nobody|_dhcp):" $src/etc/master.passwd >> $dst/etc/master.passwd
 cat << 'EOM' > $dst/etc/rc
 #!/bin/sh
 #
@@ -215,7 +223,8 @@ EOM
 else
 
 # update root password
-(grep '^root:' $src/etc/master.passwd; grep -v '^root:' $dst/etc/master.passwd ) |sed 's!/bin/csh!/bin/sh!'> $dst/etc/master.passwd
+grep -E "^(root):" $src/etc/master.passwd | sed 's!root:/.*$!root:/bin/sh!' > $dst/etc/master.passwd
+grep -E "^(nobody|_dhcp):" $src/etc/master.passwd >> $dst/etc/master.passwd
 
 fi
 
@@ -243,11 +252,6 @@ fi
 $src/usr/local/bin/dropbearconvert openssh dropbear $src/etc/ssh/ssh_host_rsa_key $dst/etc/dropbear_host_key
 cp $src/usr/local/sbin/dropbear $dst/sbin/
 pwd_mkdb -p -d $dst/etc $dst/etc/master.passwd
-
-echo ""
-echo "DON'T FORGET TO SET A ROOT PASSWORD"
-echo ""
-LANG= ASSUME_ALWAYS_YES=yes chroot /mnt passwd
 
 mkdir -p $dst/root/.ssh
 chmod 700 $dst/root/.ssh
