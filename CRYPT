@@ -15,12 +15,26 @@ if [ "$(uname -s)" != "FreeBSD" ] ; then
 	exit 1
 fi
 
-if [ ! -f $bsd/base.txz ] ; then
-	set +x
-	echo "Can't find FreeBSD installation files in $bsd" >&2
-	echo "Try:"
-	echo "(cd $bsd && wget -nd --no-parent -r ftp://ftp.freebsd.org/pub/FreeBSD/releases/$(uname -m)/$(uname -r |sed 's/-.*/-RELEASE/')/)"
-	exit 1
+quit=0
+for a in base doc lib32 kernel; do
+	if [ ! -f $bsd/$a.txz ]; then
+		set +x
+		if [ ! -w $bsd ]; then
+			echo "$bsd isn't writeable"
+			echo "try mounting as tmpfs: mount -o size=300M -t tmpfs tmpfs $bsd"
+			exit 1
+		fi
+		echo "Can't find FreeBSD installation file $a in $bsd" >&2
+		echo "trying to download it"
+		fetch ftp://ftp.freebsd.org/pub/FreeBSD/releases/$(uname -m)/$(uname -r |sed 's/-.*/-RELEASE/')/)"/$a.txz
+		quit=$?
+		set -x
+	fi
+	quit=1
+done
+if [ $quit -ne 0 ]; then
+	echo "Something went wrong, while downloading FreeBSD installation files"
+    exit 1
 fi
 
 bin=$(dirname $0)
