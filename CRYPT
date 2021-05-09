@@ -26,7 +26,7 @@ for a in base doc lib32 kernel; do
 		fi
 		echo "Can't find FreeBSD installation file $a in $bsd" >&2
 		echo "trying to download it"
-		fetch -o $bsd/$a.txz ftp://ftp.freebsd.org/pub/FreeBSD/releases/$(uname -m)/$(uname -r |sed 's/-.*/-RELEASE/')"/$a.txz
+		fetch -o $bsd/$a.txz ftp://ftp.freebsd.org/pub/FreeBSD/releases/$(uname -m)/$(uname -r |sed 's/-.*/-RELEASE/')/$a.txz
 		quit=$?
 		set -x
 	fi
